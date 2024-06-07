@@ -1,0 +1,76 @@
+create database dldethi;
+use dldethi;
+CREATE TABLE TypeQuestion (
+    TypeID INT AUTO_INCREMENT PRIMARY KEY,
+    TypeName VARCHAR(255) NOT NULL
+);
+CREATE TABLE CategoryQuestion (
+    CategoryID INT AUTO_INCREMENT PRIMARY KEY,
+    CategoryName VARCHAR(255) NOT NULL
+);
+CREATE TABLE Question (
+    QuestionID INT AUTO_INCREMENT PRIMARY KEY,
+    Content TEXT NOT NULL,
+    CategoryID INT,
+    TypeID INT,
+    CreatorID INT,
+    CreateDate DATE,
+    EncryptedContent TEXT,
+    FOREIGN KEY (CategoryID) REFERENCES CategoryQuestion(CategoryID),
+    FOREIGN KEY (TypeID) REFERENCES TypeQuestion(TypeID)
+);
+CREATE TABLE Answer (
+    AnswerID INT AUTO_INCREMENT PRIMARY KEY,
+    Content TEXT NOT NULL,
+    QuestionID INT,
+    isCorrect BOOLEAN,
+    EncryptedContent TEXT,
+    FOREIGN KEY (QuestionID) REFERENCES Question(QuestionID)
+);
+CREATE TABLE Exam (
+    ExamID INT AUTO_INCREMENT PRIMARY KEY,
+    Code VARCHAR(255) NOT NULL,
+    Title VARCHAR(255) NOT NULL,
+    CategoryID INT,
+    Duration INT,
+    CreatorID INT,
+    CreateDate DATE,
+    FOREIGN KEY (CategoryID) REFERENCES CategoryQuestion(CategoryID)
+);
+CREATE TABLE ExamQuestion (
+    ExamID INT,
+    QuestionID INT,
+    FOREIGN KEY (ExamID) REFERENCES Exam(ExamID),
+    FOREIGN KEY (QuestionID) REFERENCES Question(QuestionID)
+);
+INSERT INTO TypeQuestion (TypeName) VALUES ('Essay');
+INSERT INTO TypeQuestion (TypeName) VALUES ('Multiple-Choice');
+INSERT INTO CategoryQuestion (CategoryName) VALUES ('Java');
+INSERT INTO CategoryQuestion (CategoryName) VALUES ('.NET');
+INSERT INTO CategoryQuestion (CategoryName) VALUES ('SQL');
+INSERT INTO CategoryQuestion (CategoryName) VALUES ('Postman');
+INSERT INTO CategoryQuestion (CategoryName) VALUES ('Ruby');
+INSERT INTO Question (Content, CategoryID, TypeID, CreatorID, CreateDate, EncryptedContent) 
+VALUES ('What is OOP?', 1, 1, 1, '2024-06-06', 'Encrypted OOP question content');
+INSERT INTO Question (Content, CategoryID, TypeID, CreatorID, CreateDate, EncryptedContent) 
+VALUES ('What is Enslish?', 1, 1, 1, '2024-06-06', 'Encrypted English question content');
+INSERT INTO Answer (Content, QuestionID, isCorrect, EncryptedContent) 
+VALUES ('Object-Oriented Programming', 1, true, 'Encrypted correct answer content');
+INSERT INTO Answer (Content, QuestionID, isCorrect, EncryptedContent) 
+VALUES ('Object-Oriented Procedure', 1, false, 'Encrypted incorrect answer content');
+INSERT INTO Exam (Code, Title, CategoryID, Duration, CreatorID, CreateDate) 
+VALUES ('EXAM001', 'Java Fundamentals Exam', 1, 90, 1, '2024-06-06');
+INSERT INTO ExamQuestion (ExamID, QuestionID) VALUES (1, 1);
+INSERT INTO ExamQuestion (ExamID, QuestionID) VALUES (1, 2);
+select *from exam;
+select *from question;
+select *from examquestion;
+select *from answers;
+Đề bài: Làm ứng dụng lưu trữ đề thi sử dụng aes và java swing
+
+Yêu cầu: Hiển thị danh sách các danh sách đề thi gồm: Code, Title, Duration, CreatorID, createdDate
+- Có thể tạo ra một đề thi mới, nhập các thông tin exam, rồi đến question và answer trong đó thì nội dung content của question và answer sẽ được mã hóa khi lưu vào database
+Nhấn vào title sẽ hiển thị ra các thông tin câu hỏi trong đó và nội dung của content ( question) đã được giải mã từ bản mã hóa content ở trong database
+Khi mở 1 question hiển thị answer nội dung cũng đc giải mã từ bản mã hóa trong database.
+thêm các phần sửa, xóa, đăng nhập
+
