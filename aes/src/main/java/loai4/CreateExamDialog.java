@@ -21,7 +21,8 @@ import javax.crypto.SecretKey;
  * @author dungi
  */
 public class CreateExamDialog extends JDialog {
-  private JTextField codeField, titleField, durationField, creatorIDField;
+
+     private JTextField codeField, titleField, durationField, creatorIDField;
     private JTextArea questionField, answerField;
     private JCheckBox isCorrectCheckbox;
     private JButton addQuestionButton, addAnswerButton, saveExamButton;
@@ -30,14 +31,17 @@ public class CreateExamDialog extends JDialog {
     private SecretKey secretKey;
     private JLabel jLabel1;
 
-    public CreateExamDialog(JFrame parent,SecretKey secretKey) {
-        
+    private Integer examID = null;
 
+    public CreateExamDialog(JFrame parent, SecretKey secretKey, Integer examID) {
         super(parent, "Create Exam", true);
-        setLayout(new GridLayout(10, 2));
+        setLayout(new BorderLayout());
 
         this.secretKey = secretKey;
+        this.examID = examID;
         questions = new ArrayList<>();
+
+        JPanel inputPanel = new JPanel(new GridLayout(10, 2, 5, 5));
 
         codeField = new JTextField();
         titleField = new JTextField();
@@ -47,29 +51,30 @@ public class CreateExamDialog extends JDialog {
         answerField = new JTextArea();
         isCorrectCheckbox = new JCheckBox("Correct");
 
-       
-        
-        add(new JLabel("Code:"));
-        add(codeField);
-        add(new JLabel("Title:"));
-        add(titleField);
-        add(new JLabel("Duration:"));
-        add(durationField);
-        add(new JLabel("CreatorID:"));
-        add(creatorIDField);
-        add(new JLabel("Question:"));
-        add(new JScrollPane(questionField));
-        add(new JLabel("Answer:"));
-        add(new JScrollPane(answerField));
-        add(isCorrectCheckbox);
+        if (examID == null) {
+            inputPanel.add(new JLabel("Code:"));
+            inputPanel.add(codeField);
+            inputPanel.add(new JLabel("Title:"));
+            inputPanel.add(titleField);
+            inputPanel.add(new JLabel("Duration:"));
+            inputPanel.add(durationField);
+        }
+        inputPanel.add(new JLabel("CreatorID:"));
+        inputPanel.add(creatorIDField);
+        inputPanel.add(new JLabel("Question:"));
+        inputPanel.add(new JScrollPane(questionField));
+        inputPanel.add(new JLabel("Answer:"));
+        inputPanel.add(new JScrollPane(answerField));
+        inputPanel.add(isCorrectCheckbox);
 
         addQuestionButton = new JButton("Add Question");
         addAnswerButton = new JButton("Add Answer");
         saveExamButton = new JButton("Save Exam");
 
-        add(addQuestionButton);
-        add(addAnswerButton);
-        add(saveExamButton);
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.add(addQuestionButton);
+        buttonPanel.add(addAnswerButton);
+        buttonPanel.add(saveExamButton);
 
         addQuestionButton.addActionListener(new ActionListener() {
             @Override
@@ -92,11 +97,19 @@ public class CreateExamDialog extends JDialog {
             }
         });
 
+        jLabel1 = new JLabel(examID == null ? "Thêm mới đề thi" : "Thêm câu hỏi vào đề thi");
+        jLabel1.setHorizontalAlignment(SwingConstants.CENTER);
+        jLabel1.setFont(new Font("Serif", Font.BOLD, 24));
+
+        add(jLabel1, BorderLayout.NORTH);
+        add(inputPanel, BorderLayout.CENTER);
+        add(buttonPanel, BorderLayout.SOUTH);
+
         pack();
         setLocationRelativeTo(parent);
         setVisible(true);
     }
-    
+
     private void addQuestion() {
         String content = questionField.getText();
         if (!content.isEmpty()) {
@@ -129,46 +142,44 @@ public class CreateExamDialog extends JDialog {
         try (Connection conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/dldethi", "root", "root")) {
             conn.setAutoCommit(false);
 
-            // Lưu đề thi
-            String code = codeField.getText();
-            String title = titleField.getText();
-            int duration = Integer.parseInt(durationField.getText());
-            int creatorID = Integer.parseInt(creatorIDField.getText());
+            if (examID == null) {
+                // Save new exam
+                String code = codeField.getText();
+                String title = titleField.getText();
+                int duration = Integer.parseInt(durationField.getText());
+                int creatorID = Integer.parseInt(creatorIDField.getText());
 
-            String sqlExam = "INSERT INTO Exam (Code, Title, Duration, CreatorID, CreateDate) VALUES (?, ?, ?, ?, NOW())";
-            PreparedStatement pstmtExam = conn.prepareStatement(sqlExam, Statement.RETURN_GENERATED_KEYS);
-            pstmtExam.setString(1, code);
-            pstmtExam.setString(2, title);
-            pstmtExam.setInt(3, duration);
-            pstmtExam.setInt(4, creatorID);
-            pstmtExam.executeUpdate();
+                String sqlExam = "INSERT INTO Exam (Code, Title, Duration, CreatorID, CreateDate) VALUES (?, ?, ?, ?, NOW())";
+                PreparedStatement pstmtExam = conn.prepareStatement(sqlExam, Statement.RETURN_GENERATED_KEYS);
+                pstmtExam.setString(1, code);
+                pstmtExam.setString(2, title);
+                pstmtExam.setInt(3, duration);
+                pstmtExam.setInt(4, creatorID);
+                pstmtExam.executeUpdate();
 
-            ResultSet rsExam = pstmtExam.getGeneratedKeys();
-            rsExam.next();
-            int examID = rsExam.getInt(1);
+                ResultSet rsExam = pstmtExam.getGeneratedKeys();
+                rsExam.next();
+                examID = rsExam.getInt(1);
+            }
 
-            // Lưu câu hỏi và câu trả lời
             for (Question question : questions) {
                 String encryptedQuestionContent = AESUtil.encrypt(question.getContent(), secretKey);
                 String sqlQuestion = "INSERT INTO Question (Content, CategoryID, TypeID, CreatorID, CreateDate) VALUES (?, NULL, NULL, ?, NOW())";
                 PreparedStatement pstmtQuestion = conn.prepareStatement(sqlQuestion, Statement.RETURN_GENERATED_KEYS);
                 pstmtQuestion.setString(1, encryptedQuestionContent);
-                pstmtQuestion.setInt(2, creatorID);
-               
+                pstmtQuestion.setInt(2, Integer.parseInt(creatorIDField.getText()));
                 pstmtQuestion.executeUpdate();
 
                 ResultSet rsQuestion = pstmtQuestion.getGeneratedKeys();
                 rsQuestion.next();
                 int questionID = rsQuestion.getInt(1);
 
-                // Liên kết câu hỏi với đề thi
                 String sqlExamQuestion = "INSERT INTO ExamQuestion (ExamID, QuestionID) VALUES (?, ?)";
                 PreparedStatement pstmtExamQuestion = conn.prepareStatement(sqlExamQuestion);
                 pstmtExamQuestion.setInt(1, examID);
                 pstmtExamQuestion.setInt(2, questionID);
                 pstmtExamQuestion.executeUpdate();
 
-                // Lưu câu trả lời
                 for (Answer answer : question.getAnswers()) {
                     String encryptedAnswerContent = AESUtil.encrypt(answer.getContent(), secretKey);
                     String sqlAnswer = "INSERT INTO Answer (Content, QuestionID, isCorrect) VALUES (?, ?, ?)";
@@ -176,7 +187,6 @@ public class CreateExamDialog extends JDialog {
                     pstmtAnswer.setString(1, encryptedAnswerContent);
                     pstmtAnswer.setInt(2, questionID);
                     pstmtAnswer.setBoolean(3, answer.isCorrect());
-                
                     pstmtAnswer.executeUpdate();
                 }
             }
@@ -229,5 +239,4 @@ public class CreateExamDialog extends JDialog {
             return isCorrect;
         }
     }
-   
 }
