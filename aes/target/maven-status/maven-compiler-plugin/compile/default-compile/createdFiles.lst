@@ -23,7 +23,6 @@ ABC\CreateExamDialog$2.class
 loai4\AESUtil.class
 com\mycompany\aes\ExamDAO.class
 loai4\ViewExamDialog.class
-loai4\NewJFrame$1.class
 ABC\ViewExamDialog.class
 com\mycompany\aes\Aes.class
 com\mycompany\aes\loai2\AESUtil.class
@@ -39,4 +38,3 @@ com\mycompany\aes\loai3\ExamApp.class
 ABC\CreateExamDialog$Question.class
 ABC\ViewExamDialog$1.class
 loai4\CreateExamDialog$3.class
-loai4\NewJFrame.class
